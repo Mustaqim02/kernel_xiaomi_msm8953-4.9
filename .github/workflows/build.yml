@@ -10,6 +10,7 @@ jobs:
           depth: 1
       - name: Install deps
         run: |
+          set -o pipefail
           sudo apt-get update
           sudo apt-get install -y clang lld llvm bc bison flex libssl-dev libelf-dev \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi make cpio zip python3
