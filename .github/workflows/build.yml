@@ -1,0 +1,50 @@
+name: build-kernel
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lineage-17.1
+          depth: 1
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm bc bison flex libssl-dev libelf-dev \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi make cpio zip python3
+      - name: Add Docker options
+        run: |
+          cat >> arch/arm64/configs/mido_defconfig <<'EOF'
+          CONFIG_SYSVIPC=y
+          CONFIG_POSIX_MQUEUE=y
+          CONFIG_FHANDLE=y
+          CONFIG_UTS_NS=y
+          CONFIG_IPC_NS=y
+          CONFIG_PID_NS=y
+          CONFIG_CGROUP_PIDS=y
+          CONFIG_CGROUP_DEVICE=y
+          CONFIG_CFS_BANDWIDTH=y
+          CONFIG_VETH=y
+          CONFIG_MACVLAN=y
+          CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y
+          CONFIG_CGROUP_NET_PRIO=y
+          CONFIG_CGROUP_NET_CLASSID=y
+          CONFIG_BLK_DEV_THROTTLING=y
+          EOF
+      - name: Build
+        run: |
+          export ARCH=arm64
+          M="O=out ARCH=arm64 CC=clang LD=ld.lld CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
+          make $M mido_defconfig
+          make $M olddefconfig
+          grep -E 'CONFIG_(PID_NS|UTS_NS|IPC_NS|VETH|CGROUP_PIDS|CGROUP_DEVICE|SYSVIPC)=' out/.config
+          make $M -j$(nproc) KCFLAGS="-Wno-error" 2>&1 | tee build.log | tail -n 200
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kernel-out
+          path: |
+            out/arch/arm64/boot/Image.gz-dtb
+            out/.config
+            build.log
