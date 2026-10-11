@@ -31,11 +31,12 @@ jobs:
           CONFIG_CGROUP_NET_PRIO=y
           CONFIG_CGROUP_NET_CLASSID=y
           CONFIG_BLK_DEV_THROTTLING=y
+          # CONFIG_DEBUG_INFO is not set
           EOF
       - name: Build
         run: |
           export ARCH=arm64
-          M="O=out ARCH=arm64 CC=clang LD=ld.lld CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
+          M="O=out ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
           make $M mido_defconfig
           make $M olddefconfig
           grep -E 'CONFIG_(PID_NS|UTS_NS|IPC_NS|VETH|CGROUP_PIDS|CGROUP_DEVICE|SYSVIPC)=' out/.config
